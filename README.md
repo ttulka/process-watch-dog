@@ -1,2 +1,6 @@
-# process-watch-dog
-Process Watch Dog
+# Process Watch Dog
+
+Java library for watching processes.
+
+
+
