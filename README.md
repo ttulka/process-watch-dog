@@ -54,3 +54,7 @@ Unwatch a process if you don't care any longer:
 ```
 watchDog.unwatch(p);
 ```
+
+## License
+
+[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
