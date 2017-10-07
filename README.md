@@ -4,6 +4,17 @@
 
 Watch Dog thread runs only when there are same active processes to watch.
 
+```
+       .-------------.       .    .   *       *   
+      /_/_/_/_/_/_/_/ \         *       .   )    .
+     //_/_/_/_/_/_// _ \ __          .        .   
+    /_/_/_/_/_/_/_/|/ \.' .`-o                    
+     |             ||-'(/ ,--'                    
+     |             ||  _ |                        
+     |             ||'' ||                        
+     |_____________|| |_|L                     hjm
+```
+
 ## Prerequisites
 - Java 6
 
@@ -42,15 +53,4 @@ watchDog.watch(p2, 2000); // kill the second process after 2 secs
 Unwatch a process if you don't care any longer:
 ```
 watchDog.unwatch(p);
-```
-
-```
-                       .-------------.       .    .   *       *   
-                      /_/_/_/_/_/_/_/ \         *       .   )    .
-                     //_/_/_/_/_/_// _ \ __          .        .   
-                    /_/_/_/_/_/_/_/|/ \.' .`-o                    
-                     |             ||-'(/ ,--'                    
-                     |             ||  _ |                        
-                     |             ||'' ||                        
-                     |_____________|| |_|L                     hjm
 ```
