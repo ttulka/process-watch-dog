@@ -30,11 +30,21 @@ public class ProcessWatchDogTest {
         Process process1 = mockProcess(validTo);
         Process process2 = mockProcess(validTo);
         Process process3 = mockProcess(validToShort);   // process 3 is short
+        Process process4 = mockProcess(validTo);
 
         ProcessWatchDog watchDog = new ProcessWatchDog();
         watchDog.watch(process1, 1000); // kill after 1 sec
         watchDog.watch(process2, 2000); // kill after 2 secs
         watchDog.watch(process3, 2000); // kill after 2 secs
+
+        Thread.sleep(500);
+
+        verify(process1, never()).destroy();
+        verify(process2, never()).destroy();
+        verify(process3, never()).destroy();
+        verify(process4, never()).destroy();
+
+        watchDog.unwatch(process4);     // unwatch
 
         Thread.sleep(3000);
 
@@ -42,7 +52,8 @@ public class ProcessWatchDogTest {
 
         verify(process1).destroy();
         verify(process2).destroy();
-        verify(process3, never()).destroy();
+        verify(process3, never()).destroy();    // died before the timeout
+        verify(process4, never()).destroy();    // unwatched
     }
 
     private int processIndex = 0;
