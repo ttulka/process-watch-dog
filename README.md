@@ -61,7 +61,7 @@ watchDog.unwatch(p);
 
 ### Keep a Process Alive
 Normally, a process should be killed only after a timeout of inactivity. 
-To tell the watch dog that a process is still active a heartbeat must be sent. 
+To tell the Watch Dog that the process is still active a heartbeat must be sent. 
 
 #### Send a heartbeat explicitly to reset the timeout:
 ```
