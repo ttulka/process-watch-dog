@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>cz.net21.ttulka.exec</groupId>
     <artifactId>process-watch-dog</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 
     <name>Process Watch Dog</name>
     <description>Java library for watching processes.</description>

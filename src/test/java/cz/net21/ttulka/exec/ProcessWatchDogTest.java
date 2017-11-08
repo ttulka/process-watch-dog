@@ -1,5 +1,8 @@
 package cz.net21.ttulka.exec;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -9,15 +12,22 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+/**
+ * @author ttulka
+ */
 public class ProcessWatchDogTest {
+
+    private int processIndex;
 
     @Before
     public void setUp() {
         initMocks(ProcessWatchDog.class);
+        processIndex = 0;
     }
 
     @Test
@@ -56,11 +66,66 @@ public class ProcessWatchDogTest {
         verify(process4, never()).destroy();    // unwatched
     }
 
-    private int processIndex = 0;
+    @Test
+    public void heartBeatTest() throws InterruptedException {
+        long currentTime = System.currentTimeMillis();
+
+        long validTo = currentTime + 2000;  // process takes 2 secs
+
+        Process process = mockProcess(validTo);
+
+        ProcessWatchDog watchDog = new ProcessWatchDog();
+        WatchedProcess watchedProcess = watchDog.watch(process, 1000); // kill after 1 sec
+
+        Thread.sleep(500);
+
+        watchDog.heartBeat(process);    // first option how to send a heartbeat
+
+        Thread.sleep(500);
+
+        watchedProcess.heartBeat();     // second option how to send a heartbeat
+
+        Thread.sleep(1200);
+
+        assertThat(watchDog.running.get(), is(false));
+
+        verify(process, never()).destroy();    // died before the timeout
+    }
+
+    @Test
+    public void heartBeatViaInputStreamTest() throws InterruptedException, IOException {
+        long currentTime = System.currentTimeMillis();
+
+        long validTo = currentTime + 2000;  // process takes 2 secs
+
+        Process process = mockProcess(validTo);
+
+        ProcessWatchDog watchDog = new ProcessWatchDog();
+        process = watchDog.watch(process, 1000); // kill after 1 sec
+
+        process = spy(process);
+
+        InputStream inputStream = process.getInputStream();
+
+        Thread.sleep(500);
+
+        inputStream.read();
+
+        Thread.sleep(500);
+
+        inputStream.read();
+
+        Thread.sleep(1200);
+
+        assertThat(watchDog.running.get(), is(false));
+
+        verify(process, never()).destroy();    // died before the timeout
+    }
 
     private Process mockProcess(final long validTo) {
         Process process = mock(Process.class);
         when(process.toString()).thenReturn("Process #" + (++processIndex));
+        when(process.getInputStream()).thenReturn(mock(InputStream.class));
         when(process.exitValue()).thenAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) {

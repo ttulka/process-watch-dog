@@ -1,7 +1,7 @@
 package cz.net21.ttulka.exec;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
@@ -15,6 +15,8 @@ import org.apache.commons.logging.LogFactory;
  * Timeout could differ from a delta {@link #DELTA}.
  * <p>
  * The thread runs only when there are any active watches.
+ *
+ * @author ttulka
  */
 public class ProcessWatchDog {
 
@@ -22,26 +24,43 @@ public class ProcessWatchDog {
 
     private static final Log log = LogFactory.getLog(ProcessWatchDog.class);
 
-    protected AtomicBoolean running = new AtomicBoolean(false);
+    private final Set<WatchedProcess> processes = new CopyOnWriteArraySet<WatchedProcess>();
 
-    private final Map<Process, Long> processes = new ConcurrentHashMap<Process, Long>();   // process, validTo
+    protected AtomicBoolean running = new AtomicBoolean(false);
 
     /**
      * Add a process to watching.
      *
      * @param process         the process
      * @param timeoutInMillis the timeout in millis
+     * @return the watched process
      */
-    public void watch(Process process, int timeoutInMillis) {
+    public WatchedProcess watch(Process process, int timeoutInMillis) {
         log.debug("Process watched: " + process);
 
-        if (!addProcessAndCheckRunning(process, timeoutInMillis)) {
+        WatchedProcess watchedProcess = new WatchedProcess(process, timeoutInMillis);
+
+        if (!addProcessAndCheckRunning(watchedProcess)) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     ProcessWatchDog.this.run();
                 }
             }).start();
+        }
+        return watchedProcess;
+    }
+
+    /**
+     * Atomic adds a new process to the watched processes and sets running to true if it is not.
+     *
+     * @param process the new watched process
+     * @return true if the watch dog is currently running otherwise false
+     */
+    private boolean addProcessAndCheckRunning(WatchedProcess process) {
+        synchronized (running) {
+            processes.add(process);
+            return running.getAndSet(true);
         }
     }
 
@@ -56,21 +75,25 @@ public class ProcessWatchDog {
     }
 
     /**
-     * Atomic adds a new process to the watched processes and sets running to true if it is not currently
+     * Sends a heart beat to the process, increase the valid to value for the current time plus the timeout.
      *
-     * @param process the new watched process
-     * @param timeout the timeout in millis
-     * @return true if the watch dog is currently running otherwise false
+     * @param process the process
      */
-    private boolean addProcessAndCheckRunning(Process process, int timeout) {
-        synchronized (running) {
-            processes.put(process, System.currentTimeMillis() + timeout);
-            return running.getAndSet(true);
+    public void heartBeat(Process process) {
+        if (processes.contains(process)) {
+
+            for (WatchedProcess watchedProcess : processes) {
+                if (watchedProcess.equals(process)) {
+
+                    watchedProcess.heartBeat();
+                    return;
+                }
+            }
         }
     }
 
     /**
-     * Atomic checks if there are any watched processes and sets running to false if not
+     * Atomic checks if there are any watched processes and sets running to false if not.
      *
      * @return true is watched processes are empty otherwise false
      */
@@ -94,17 +117,16 @@ public class ProcessWatchDog {
 
             long currentTime = System.currentTimeMillis();
 
-            for (Map.Entry<Process, Long> entry : processes.entrySet()) {
-                Process process = entry.getKey();
-                Long validTo = entry.getValue();
+            for (WatchedProcess process : processes) {
 
                 if (!isAlive(process)) {
                     unwatch(process);
 
-                } else if (validTo < currentTime) {
+                } else if (process.validTo() < currentTime) {
                     log.info("Process killed: " + process);
-                    process.destroy();
+
                     unwatch(process);
+                    killProcess(process);
                 }
             }
 
@@ -115,6 +137,12 @@ public class ProcessWatchDog {
         }
     }
 
+    /**
+     * Checks if the process is alive.
+     *
+     * @param process the process
+     * @return true if the process is alive, otherwise false
+     */
     private boolean isAlive(Process process) {
         try {
             process.exitValue();
@@ -122,6 +150,20 @@ public class ProcessWatchDog {
 
         } catch (IllegalThreadStateException e) {
             return true;
+        }
+    }
+
+    /**
+     * Kills the process.
+     *
+     * @param process the process
+     */
+    private void killProcess(Process process) {
+        try {
+            process.destroy();
+
+        } catch (Exception e) {
+            log.warn("Exception by killing the process.", e);
         }
     }
 }
