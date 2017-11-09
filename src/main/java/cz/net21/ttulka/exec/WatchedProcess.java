@@ -20,7 +20,7 @@ public class WatchedProcess extends Process {
 
     private long validTo;
 
-    WatchedProcess(Process process, int timeout) {
+    protected WatchedProcess(Process process, int timeout) {
         this.process = process;
         this.timeout = timeout;
 
