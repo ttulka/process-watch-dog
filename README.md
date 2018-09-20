@@ -21,7 +21,7 @@ Watch Dog thread runs only when there are same active processes to watch.
 ## Usage
 
 Copy the Maven dependency into your Maven project:
-```
+```xml
 <dependency>
     <groupId>cz.net21.ttulka.exec</groupId>
     <artifactId>process-watch-dog</artifactId>
@@ -32,12 +32,12 @@ Copy the Maven dependency into your Maven project:
 ### Watch a Process
 
 #### Create a Watch Dog object:
-```
+```java
 ProcessWatchDog watchDog = new ProcessWatchDog();
 ```
 
 #### Create a process and watch it by the Watch Dog:
-```
+```java
 ProcessBuilder pb = new ProcessBuilder("myCommand", "myArg1", "myArg2");
 Process p = pb.start();
 
@@ -45,7 +45,7 @@ watchDog.watch(p, 1000); // kill the process after 1 sec
 ```
 
 #### Watch another process by the same Watch Dog:
-```
+```java
 pb = new ProcessBuilder("otherCommand");
 Process p2 = pb.start();
 
@@ -55,7 +55,7 @@ watchDog.watch(p2, 2000); // kill the second process after 2 secs
 ### Unwatch a Process
 
 #### Unwatch a process if you don't care any longer:
-```
+```java
 watchDog.unwatch(p);
 ```
 
@@ -64,12 +64,12 @@ Normally, a process should be killed only after a timeout of inactivity.
 To tell the Watch Dog that the process is still active a heartbeat must be sent. 
 
 #### Send a heartbeat explicitly to reset the timeout:
-```
+```java
 watchDog.heartBeat(p);
 ```
 
 #### Send a heartbeat automatically with every read byte:
-```
+```java
 p = watchDog.watch(p, 1000);    // reassign the `WatchedProcess` object to the process reference
 
 InputStream is = p.getInputStream();
@@ -79,7 +79,7 @@ while ((b = is.read()) != -1) {
 }
 ``` 
 Alternatively, send a heartbeat explicitly via `WatchedProcess` object:
-```
+```java
 WatchedProcess wp = watchDog.watch(p, 1000);    // use the returned watched process object
 wp.heartBeat();
 ```
